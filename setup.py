@@ -11,7 +11,7 @@ def readme():
 setup(
     name='nimrod',
     description='The killer of useless mutants.',
-    log_description=readme(),
+    long_description=readme(),
     version='2.0.0',
     url='https://github.com/easy-software-ufal/nimrod-hunor',
     author='Marcio Augusto Guimarães',
@@ -43,5 +43,6 @@ setup(
         'Programming Language :: Python :: 3',
         'Topic :: Test :: Mutation :: Java'
     ],
-    python_requires='>=3'
+    python_requires='>=3',
+    setup_requires=['nose==1.3.7']
 )

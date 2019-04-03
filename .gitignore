@@ -117,4 +117,10 @@ nimrod/tests/env-config.json
 *.class
 
 #Microsoft
-.vscode/
+*.vscode/
+
+#vim
+*.swp
+
+#ctags
+tags

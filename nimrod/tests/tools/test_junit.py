@@ -51,9 +51,15 @@ class TestJUnit(TestCase):
     def test_run_junit_timeout(self):
         junit = JUnit(self.java, self.classpath)
 
-        with self.assertRaises(subprocess.TimeoutExpired):
-            junit.exec(self.suite_dir, self.suite_classes_dir,
-                       self.sut_class, self.suite_classes[0], 0)
+        result = junit.exec(self.suite_dir, self.suite_classes_dir,
+                            self.sut_class, self.suite_classes[0], 0)
+
+        self.assertEqual(0, result.ok_tests)
+        self.assertEqual(0, result.fail_tests)
+        self.assertEqual(0, len(result.fail_test_set))
+        self.assertEqual(0, result.run_time)
+        self.assertIsNone(result.coverage)
+        self.assertTrue(result.timeout)
 
     def test_run_junit_with_mutant(self):
         junit = JUnit(self.java, self.classpath)
