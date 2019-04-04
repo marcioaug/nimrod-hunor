@@ -7,6 +7,9 @@ from nimrod.tests.utils import get_config
 from nimrod.tests.utils import calculator_java_file
 from nimrod.tests.utils import calculator_package_dir
 from nimrod.tests.utils import calculator_operation_java_file
+from nimrod.tests.utils import calculator_src_dir
+from nimrod.utils import get_java_files
+from nimrod.utils import get_class_files
 
 
 class TestJava(TestCase):
@@ -85,3 +88,28 @@ class TestJava(TestCase):
         self.assertTrue('JAVA_HOME' in env)
         self.assertTrue('VARIABLE' in env)
         self.assertEqual(env['VARIABLE'], 'VALUE')
+
+    def test_compile_all(self):
+        java = Java(self.java_home)
+        src_dir = calculator_src_dir()
+
+        self._clean_class_files(src_dir)
+
+        java.compile_all(src_dir, src_dir)
+
+        class_files = 0
+
+        for java_file in get_java_files(src_dir):
+            class_file = os.path.join(src_dir,
+                                      java_file.replace('.java', '.class'))
+            if os.path.exists(class_file):
+                class_files += 1
+
+        self.assertEqual(6, class_files)
+
+        self._clean_class_files(src_dir)
+
+    @staticmethod
+    def _clean_class_files(directory):
+        for file in get_class_files(directory):
+            os.remove(os.path.join(directory, file))
