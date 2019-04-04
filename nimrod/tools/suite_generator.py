@@ -33,7 +33,7 @@ class SuiteGenerator(ABC):
 
     @abstractmethod
     def _exec_tool(self):
-        pass
+        '''This function should call suite generator tool.'''
 
     def _compile(self):
         self.suite_classes_dir = os.path.join(self.suite_dir, 'classes')
@@ -42,18 +42,15 @@ class SuiteGenerator(ABC):
         classpath = generate_classpath([self.classpath, self.suite_dir, JUNIT,
                                         HAMCREST, self.suite_classes_dir]
                                        + self._extra_classpath())
+        params = '-classpath', classpath, '-d', self.suite_classes_dir
 
-        for java_file in self._get_java_files():
-            java_file = os.path.join(self.suite_dir, java_file)
-            try:
-                self.java.exec_javac(java_file, self._get_suite_dir(),
-                                     self.java.get_env(), COMPILE_TIMEOUT,
-                                     '-classpath', classpath,
-                                     '-d', self.suite_classes_dir)
-            except subprocess.CalledProcessError as e:
-                print('[ERROR] Compiling {0} tests: {1}'.format(
-                    self._get_tool_name(), e.output.decode('unicode_escape')),
-                    file=sys.stderr)
+        self.java.exec_java_all(
+            [os.path.join(self.suite_dir, f) for f in self._get_java_files()],
+            self._get_suite_dir(),
+            self.java.get_env(),
+            COMPILE_TIMEOUT * len(self._get_java_files()),
+            *params
+        )
 
     def _get_java_files(self):
         return sorted(get_java_files(self.suite_dir))
@@ -67,7 +64,7 @@ class SuiteGenerator(ABC):
 
     @abstractmethod
     def _test_classes(self):
-        pass
+        '''This function shoud return a list with classes to run with Junit.'''
 
     @staticmethod
     def _get_timeout():
@@ -83,8 +80,9 @@ class SuiteGenerator(ABC):
             return self.java.exec_java(self.suite_dir, self.java.get_env(),
                                        self._get_timeout(), *command)
         except subprocess.CalledProcessError as e:
-            print('[ERROR] {0} call process error with command {1}: {2}'.format(
-                self._get_tool_name(), command, e.output), file=sys.stderr)
+            print('[ERROR] {0} call process error with ' +
+                  'command {1}: {2}'.format(self._get_tool_name(), command,
+                                            e.output), file=sys.stderr)
             raise e
         except subprocess.TimeoutExpired:
             print('[WARNING] {0} timeout.')

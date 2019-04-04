@@ -37,7 +37,8 @@ class Java:
 
     @property
     def java(self):
-        return os.path.join(self.java_home, os.sep.join(['jre', 'bin', 'java']))
+        return os.path.join(self.java_home,
+                            os.sep.join(['jre', 'bin', 'java']))
 
     def _version_javac(self):
         return self.simple_exec_javac('-version')
@@ -90,11 +91,36 @@ class Java:
         return env
 
     def compile_all(self, classpath, directory):
-        if os.path.exists(directory):
-            java_files = get_java_files(directory)
-            for java_file in java_files:
-                class_file = os.path.join(directory,
-                                          java_file.replace('.java', '.class'))
-                if not os.path.exists(class_file):
-                    self.exec_javac(java_file, directory, None, None,
-                                    '-classpath', classpath)
+        args = '-classpath', classpath
+        self.exec_javac_dir(directory, directory, self.get_env(), None,
+                            True, *args)
+
+    def exec_javac_dir(self, directory, cwd, env, timeout, skip_exists, *args):
+        java_files = get_java_files(directory)
+
+        if skip_exists:
+            java_files = self.get_not_compiled_files(java_files, *args)
+
+        self.exec_java_all(java_files, cwd, env, timeout, *args)
+
+    @staticmethod
+    def get_not_compiled_files(java_files, *args):
+        not_compiled = []
+        dest_dir = Java.get_dest_dir(args)
+        for f in java_files:
+            class_file = os.path.join(dest_dir, f.replace('.java', '.class'))
+            if not os.path.exists(class_file):
+                not_compiled.append(f)
+
+        return not_compiled
+
+    def exec_java_all(self, java_files, cwd, env, timeout, *args):
+        for java_file in java_files:
+            self.exec_javac(java_file, cwd, env, timeout, *args)
+
+    @staticmethod
+    def get_dest_dir(args):
+        try:
+            return args[args.index('-d') + 1]
+        except (ValueError, IndexError):
+            return ''
