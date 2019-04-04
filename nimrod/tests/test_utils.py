@@ -9,6 +9,7 @@ from nimrod.tests.utils import calculator_target_dir
 
 from nimrod.utils import get_files, get_class_files, get_java_files
 from nimrod.utils import generate_classpath
+from nimrod.utils import dir_to_package
 from nimrod.tools.java import Java
 from nimrod.tools.maven import Maven
 
@@ -93,6 +94,12 @@ class TestUtils(TestCase):
         self.assertEqual('a', path_split[0])
         self.assertEqual('b', path_split[1])
         self.assertEqual('c', path_split[2])
+
+    def test_dir_to_package(self):
+        directory = os.path.join('org', 'apache', 'commons', 'math')
+        package = dir_to_package(directory)
+
+        self.assertEqual('org.apache.commons.math', package)
 
     def tearDown(self):
         calculator_clean_project()
