@@ -7,6 +7,7 @@ from unittest import TestCase
 from nimrod.tests.utils import calculator_project_dir
 from nimrod.tests.utils import get_config
 
+from nimrod.utils import generate_classpath
 from nimrod.tools.suite_generator import SuiteGenerator
 from nimrod.tools.java import Java
 
@@ -17,12 +18,13 @@ class ToolSuiteGenerator(SuiteGenerator):
         return 'test'
 
     def _exec_tool(self):
-        return self._exec('-version')
+        return self._exec(*tuple('-version'))
 
     def _test_classes(self):
         return []
 
-    def _get_timeout(self):
+    @staticmethod
+    def _get_timeout():
         return 0
 
 
@@ -38,8 +40,10 @@ class TestSuiteGenerator(TestCase):
         self.assertEqual('test', self.suite_tool._get_tool_name())
 
     def test_generate_timeout(self):
-        with self.assertRaises(subprocess.TimeoutException):
+        try:
             self.suite_tool.generate()
+        except subprocess.TimeoutExpired:
+            self.fail()
 
     def tearDown(self):
         shutil.rmtree(self.tests_src)
