@@ -4,6 +4,7 @@ import os
 import sys
 import shutil
 import subprocess
+import threading
 
 from collections import namedtuple
 
@@ -14,6 +15,7 @@ from nimrod.tools.bin import JUNIT, HAMCREST
 TIMEOUT = 5 * 60
 COMPILE_TIMEOUT = 20
 
+lock = threading.RLock()
 
 Suite = namedtuple('Suite', ['suite_name', 'suite_dir', 'suite_classes_dir',
                              'test_classes'])
@@ -92,10 +94,13 @@ class SuiteGenerator(ABC):
         self._create_dirs(self.suite_dir)
 
     def _set_suite_name(self):
+        lock.acquire()
         self._create_dirs(self.tests_src, False)
         src_dirs = [file for file in os.listdir(self.tests_src)
                     if file.startswith(self._get_tool_name())]
-        return '{0}_{1}'.format(self._get_tool_name(), len(src_dirs) + 1)
+        result = '{0}_{1}'.format(self._get_tool_name(), len(src_dirs) + 1)
+        lock.release()
+        return result
 
     @staticmethod
     def _create_dirs(path, remove_if_exists=True):

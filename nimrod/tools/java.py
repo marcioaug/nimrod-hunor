@@ -36,6 +36,10 @@ class Java:
         return os.path.join(self.java_home, os.sep.join(['bin', 'javac']))
 
     @property
+    def javap(self):
+        return os.path.join(self.java_home, os.sep.join(['bin', 'javap']))
+
+    @property
     def java(self):
         return os.path.join(self.java_home,
                             os.sep.join(['jre', 'bin', 'java']))
@@ -61,6 +65,13 @@ class Java:
             args.append(java_file)
 
         return self._exec(self.javac, cwd, env, timeout, *args)
+
+    def exec_javap(self, class_file, cwd, env, timeout, *args):
+        args = list(args)
+        if class_file:
+            args.append(class_file)
+
+        return self._exec(self.javap, cwd, env, timeout, *args)    
 
     @staticmethod
     def _exec(program, cwd, env, timeout, *args):
