@@ -102,7 +102,7 @@ class Java:
         return env
 
     def compile_all(self, classpath, directory):
-        args = '-classpath', classpath
+        args = '-classpath', classpath, '-d', directory
         self.exec_javac_dir(directory, directory, self.get_env(), None,
                             True, *args)
 

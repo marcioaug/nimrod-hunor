@@ -75,7 +75,8 @@ class Evosuite(SuiteGenerator):
 
         return Suite(suite_name=self.suite_name, suite_dir=self.suite_dir,
                      suite_classes_dir=self.suite_classes_dir,
-                     test_classes=self._test_classes())
+                     test_classes=self._test_classes(),
+                     tool_name=self._get_tool_name())
 
     # Argument for using only specific methods to test
     # Eg.: -Dtarget_method_list="append(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;"

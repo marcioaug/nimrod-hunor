@@ -18,7 +18,7 @@ COMPILE_TIMEOUT = 20
 lock = threading.RLock()
 
 Suite = namedtuple('Suite', ['suite_name', 'suite_dir', 'suite_classes_dir',
-                             'test_classes'])
+                             'test_classes', 'tool_name'])
 
 
 class SuiteGenerator(ABC):
@@ -116,4 +116,5 @@ class SuiteGenerator(ABC):
 
         return Suite(suite_name=self.suite_name, suite_dir=self.suite_dir,
                      suite_classes_dir=self.suite_classes_dir,
-                     test_classes=self._test_classes())
+                     test_classes=self._test_classes(), 
+                     tool_name=self._get_tool_name)

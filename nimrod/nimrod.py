@@ -10,6 +10,7 @@ from nimrod.tools.safira import Safira
 from nimrod.tools.junit import JUnit, JUnitResult, Coverage
 from nimrod.tools.evosuite import Evosuite
 from nimrod.utils import package_to_dir
+from nimrod.tool_suite_executor import SuiteFactory, SuiteEnv
 
 from collections import namedtuple
 
@@ -17,9 +18,11 @@ from collections import namedtuple
 OUTPUT_DIR = 'nimrod_output'
 
 
-NimrodResult = namedtuple('NimrodResult', ['maybe_equivalent', 'not_equivalent',
+NimrodResult = namedtuple('NimrodResult', ['maybe_equivalent', 
+                                           'not_equivalent',
                                            'coverage', 'differential',
-                                           'timeout', 'test_tool', 'is_equal_coverage'])
+                                           'timeout', 'test_tool', 
+                                           'is_equal_coverage'])
 
 
 class Nimrod:
@@ -34,14 +37,31 @@ class Nimrod:
     def run(self, project_dir, mutants_dir, sut_class, randoop_params=None,
             evosuite_diff_params=None, evosuite_params=None, output_dir=None):
 
-        results = {}
-
         _, classes_dir = self.maven.compile(project_dir, clean=True)
         output_dir = self.check_output_dir(output_dir if output_dir
                                            else os.path.join(project_dir,
                                                              OUTPUT_DIR))
 
-        for mutant in self.get_mutants(classes_dir, mutants_dir):
+        suite_env = SuiteEnv(
+            classes_dir=classes_dir, 
+            sut_class=sut_class, 
+            tests_src=os.path.join(output_dir, 'suites', 'ORIGINAL')
+        ) 
+
+        suites = self.generate_suites(
+            suite_env=suite_env, 
+            evo_params=evosuite_params,
+            ran_params=randoop_params
+        )  
+
+        mutants = self.get_mutants(classes_dir, mutants_dir)
+
+        mutants, results = self.try_with_original_suites(mutants, sut_class, 
+                                                        suites, output_dir)
+
+        print("\n\nFollowing the game with {0} mutans...\n"
+              .format(len(mutants)))
+        for mutant in mutants:
             start_time = time.time()
             if self.check_mutant(mutant, sut_class):
                 tests_src = os.path.join(output_dir, 'suites', mutant.mid)
@@ -106,13 +126,48 @@ class Nimrod:
 
         return results
 
+    def generate_suites(self, suite_env, evo_params, ran_params):
+        suites = []
+        suite_factory = SuiteFactory(self.java, suite_env)
+
+        suites.append(suite_factory.evosuite_generate(evo_params))
+        suites.append(suite_factory.randoop_generate(ran_params))
+
+        return suites
+
+    def try_with_original_suites(self, mutants, sut_class, suites, output_dir):
+        not_killed = []
+        results = {}
+
+        for mutant in mutants:
+            if self.check_mutant(mutant, sut_class):
+                start_time = time.time()
+                killed = False
+                for suite in suites:
+                    if not killed:
+                        test_result = suite.run_with_mutant(mutant)
+                        if test_result.fail_tests > 0 or test_result.timeout:
+                            results[mutant.mid] = self.create_nimrod_result(
+                                test_result, False, suite.get_tool_name())
+                            killed = True
+                if not killed:
+                    not_killed.append(mutant)  
+                    print('\tNot killed, follow the game.')
+                else:
+                    exec_time = time.time() - start_time
+                    self.print_result(mutant, results[mutant.mid])
+                    self.write_to_csv(results[mutant.mid], mutant, output_dir, 
+                    exec_time=exec_time)                        
+        
+        return not_killed, results
+
     @staticmethod
     def print_result( mutant, result):
         if result.maybe_equivalent:
-            print('{0} maybe equivalent, executions: {1}.'
+            print('\t{0} maybe equivalent, executions: {1}.'
                   .format(mutant.mid, result.coverage.executions))
         else:
-            print('{0} is not equivalent. {1}'
+            print('\t{0} is not equivalent. {1}'
                   .format(mutant.mid, 'Killed by differential test.' if
                           result.differential else ''))
 
@@ -123,12 +178,12 @@ class Nimrod:
             class_file = os.path.join(mutant.dir, package_to_dir(sut_class) +
                                       '.class')
             if not os.path.exists(class_file):
-                print("{0}: .class not found.".format(mutant.mid))
+                print("\t{0}: .class not found.".format(mutant.mid))
                 return False
             else:
                 return True
         else:
-            print('{0}: directory not found.'.format(mutant.mid))
+            print('\t{0}: directory not found.'.format(mutant.mid))
             return False
 
     def get_mutants(self, classpath, mutants_dir):

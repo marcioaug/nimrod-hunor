@@ -48,7 +48,8 @@ class MuJava:
     def compile_mutants(self, classpath, mutants):
         print("Compiling mutants...")
         for mutant in mutants:
-            self.java.compile_all(classpath, mutant.dir)
+            if os.path.exists(mutant.dir):
+                self.java.compile_all(classpath, mutant.dir)
 
     @staticmethod
     def _get_line_number(number, operator):
