@@ -140,7 +140,10 @@ class Nimrod:
 
 
     def check_class_coverage(self, classes_dir, sut_class, mutant, evo_test_result, ran_test_result):
-        
+
+        evosuite_coverage = False
+        randoop_coverage = False
+
         original_dir = os.path.join(
                             mutant.dir[:mutant.dir.rfind(os.sep)], 'ORIGINAL')
         original = Mutant(mid='ORIGINAL', operator=None, line_number=None,
@@ -152,8 +155,20 @@ class Nimrod:
         orig_ran_result = (junit.run_with_mutant(self.suite_randoop, sut_class, original)
                 if self.suite_randoop else None)        
 
-        evosuite_coverage = (orig_evosuite_result.coverage.class_coverage == evo_test_result.coverage.class_coverage)
-        randoop_coverage = (orig_ran_result.coverage.class_coverage == ran_test_result.coverage.class_coverage)
+        if orig_evosuite_result == None and evo_test_result == None:
+            evosuite_coverage = True
+        elif orig_evosuite_result == None or evo_test_result == None:
+            evosuite_coverage = False
+        else:
+            evosuite_coverage = (orig_evosuite_result.coverage.class_coverage == evo_test_result.coverage.class_coverage)
+
+        if orig_ran_result == None and ran_test_result == None:
+            randoop_coverage = True
+        elif orig_ran_result == None or ran_test_result == None:
+            randoop_coverage = False
+        else:
+            randoop_coverage = (orig_ran_result.coverage.class_coverage == ran_test_result.coverage.class_coverage)
+
         return  (evosuite_coverage and randoop_coverage)
 
 
